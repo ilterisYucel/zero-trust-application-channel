@@ -1,68 +1,69 @@
 # zero-trust-application-channel
 
-Jenerik, çoklanmış WebSocket tüneli — tek outbound bağlantı üzerinden HTTP/WS
-reverse proxy + oturum yönetimi. GD-PMS monorepo'sundan **bağımsız bir
-kütüphanedir** (tamper-logger deseni; ayrıntı:
-`../docs/LIB-MIMARISI.md`). Domain adapter'leri
-(Fastify/PG/ContainerProxy) tüketici projede yaşar.
+Generic, multiplexed WebSocket tunnel: HTTP/WS reverse-proxying and session
+management over a single outbound connection. This package is the **core
+library** — independent of any application or monorepo. Domain adapters
+(Fastify/PG/container proxies) live in the consuming project.
 
-**İki deployment, tek paket (v2):** aynı jenerik paket hem
-**field→container** hem **field→boss** topolojisinde çalışır — register şeması
-nötr `peerId`+`peerType`, oturum/cookie/allowlist config'le enjekte edilir
-(ayrıntı: `../docs/CONTRACTS.md`).
+**Two deployments, one package (v2):** the same generic package serves both
+**field→container** and **field→boss** topologies — the register schema is
+neutral (`peerId` + `peerType`), and session/cookie/allowlist behaviour is
+injected via config (see [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md)).
 
-## İçerik
+## Contents
 
-| Modül | Görev |
+| Module | Responsibility |
 |---|---|
-| `codec` | Binary frame codec — 9 bayt başlık (streamId u32 BE + seq u32 BE + flags FIN/RST/WS_OP); `decode` asla throw etmez (`Result`) |
-| `protocol` | Kontrol mesaj tipleri + zod şemaları (register/ack — v2 `peerId`+`peerType`, heartbeat, telemetry, stream-*, open-session/*); `TUNNEL_PROTOCOL_VERSION = 2` |
-| `connector` | `TunnelConnector` — outbound WS istemcisi + durum makinesi + üstel backoff (`ReconnectDelay`) |
-| `channel` | `ISocketClient`/`WsSocketClient` (ws adapter), `ITunnelChannel` (client ucu), `IHubChannel` (hub ucu — peerId'li) |
-| `client` | `TunnelClient` — stream multiplex, kredi bazlı backpressure, çift upstream yönlendirme, WS köprüsü |
-| `session` | `ClientSessionStore` + `ClientSessionServer` — geçici oturum JWT'si (`ITokenSigner` enjeksiyonu) |
-| `proxy` | `SessionGateway` + `HubSessionStore` + `TunnelProxy` — hub tarafı oturum + HTTP/WS proxy (`IHubChannel`/`IStreamSink`/`IAuditSink` enjeksiyonu; cookieName + PathAllowlist config'i) |
-| `logger` / `token` / `audit` / `snapshot` / `types` | Bağımsızlık sözleşmeleri — minimal `ILogger`, `ITokenSigner`, `IAuditSink`, `ISnapshotSource`, jenerik `TunnelRole`/`TunnelUser`/`TunnelTelemetryPoint` |
+| `codec` | Binary frame codec — 9-byte header (streamId u32 BE + seq u32 BE + flags FIN/RST/WS_OP); `decode` never throws (`Result`) |
+| `protocol` | Control message types + zod schemas (register/ack — v2 `peerId` + `peerType`, heartbeat, telemetry, stream-*, open-session/*); `TUNNEL_PROTOCOL_VERSION = 2` |
+| `connector` | `TunnelConnector` — outbound WS client + state machine + exponential backoff (`ReconnectDelay`) |
+| `channel` | `ISocketClient`/`WsSocketClient` (ws adapter), `ITunnelChannel` (client side), `IHubChannel` (hub side, carries peerId) |
+| `client` | `TunnelClient` — stream multiplexing, credit-based backpressure, dual upstream routing, WS bridge |
+| `session` | `ClientSessionStore` + `ClientSessionServer` — ephemeral session JWT (`ITokenSigner` injection) |
+| `proxy` | `SessionGateway` + `HubSessionStore` + `TunnelProxy` — hub-side session + HTTP/WS proxy (`IHubChannel`/`IStreamSink`/`IAuditSink` injection; cookieName + PathAllowlist config) |
+| `logger` / `token` / `audit` / `snapshot` / `types` | Independence contracts — minimal `ILogger`, `ITokenSigner`, `IAuditSink`, `ISnapshotSource`, generic `TunnelRole`/`TunnelUser`/`TunnelTelemetryPoint` |
 
-## Bağımlılıklar
+## Dependencies
 
-`ws`, `zod`, `@gd-monorepo/result` — başka bir şey yok. (`jose` yalnızca
-devDependency — test yardımcısı; üretim kodu `ITokenSigner` enjeksiyonuyla
-çalışır.)
+`ws` + `zod` — nothing else. (`jose` is an optional peer, used only by the
+`./test-helpers` subpath; production code works through injected
+`ITokenSigner`.)
 
-## Örnek — loopback uçtan uca (monorepo'suz)
+## Example — loopback end-to-end (no application code)
 
 ```bash
 bun lib/examples/loopback-demo.mjs
 ```
 
-Paket içi demo: `HubHarness` (hub ucu) ↔ `TunnelConnector` + `TunnelClient`
-(client ucu) ↔ `SessionGateway` + `TunnelProxy` — tek gerçek WS kanalında
-register → oturum → tünel HTTP → WS köprüsü. Aynı akış test olarak da çalışır:
+In-package demo: `HubHarness` (hub side) ↔ `TunnelConnector` + `TunnelClient`
+(client side) ↔ `SessionGateway` + `TunnelProxy` — register → session → tunnel
+HTTP → WS bridge over a single real WS channel. The same flow runs as a test:
 
 ```bash
-bun nx run lib:test   # loopback.spec.ts dahil
+bun run test   # includes loopback.spec.ts
 ```
 
-## Test & kalite kapıları
+## Tests & quality gates
 
-- `nx run lib:test` — unit + spec + loopback uçtan uca
-- `nx run lib:typecheck` — `tsc --noEmit` (test dosyaları hariç)
-- Güvenlik-kritik modüller (codec, connector, client, proxy) branch kapsamı ≥ %90 hedeflenir
+- `bun run test` — unit + spec + loopback end-to-end
+- `bun run typecheck` — `tsc --noEmit` (production code, tests excluded)
+- Security-critical modules (codec, connector, client, proxy) target ≥90%
+  branch coverage.
 
-## Sözleşme özeti
+## Contract summary
 
 ```ts
-// Client ucu: TunnelConnector zaten ITunnelChannel'dır
+// Client side: TunnelConnector already is an ITunnelChannel
 const client = TunnelClient.create({ webServiceUrl, staticUrl });
 client.attach(connector);
 
-// Hub ucu: IHubChannel adapter'i (ör. paket içi HubHarness veya
-// tüketicinin ContainerProxy sarmalayıcısı) + IStreamSink (tüketicinin
-// HTTP framework adapter'i) + IAuditSink + ITokenSigner enjekte edilir
+// Hub side: inject an IHubChannel adapter (e.g. the in-package HubHarness or
+// the consumer's container-proxy wrapper), an IStreamSink (the consumer's
+// HTTP framework adapter), an IAuditSink and an ITokenSigner
 const gateway = new SessionGateway(channel, store, audit, logger);
 const proxy = new TunnelProxy(channel, store, logger);
 ```
 
-Tünel rolü YORUMLAMAZ: `TunnelRole` serbest string'dir — eşleme ve RBAC
-tüketiciye aittir. Detaylı protokol: `../docs/deprecated/KONTEYNER-UZAKTAN-ERISIM-MIMARISI.md`.
+The tunnel does NOT interpret roles: `TunnelRole` is a free string — mapping
+and RBAC belong to the consumer. Detailed protocol: [`../docs/LIB-MIMARISI.md`](../docs/LIB-MIMARISI.md)
+and [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md).

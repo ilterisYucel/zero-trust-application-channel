@@ -1,32 +1,34 @@
 # agent
 
-Zero-trust application channel **peer agent** — tek binary CLI:
+Zero-trust application channel **peer agent** — a single-binary CLI:
 `run | setup | wizard | uninstall | config show`.
 
-## Kurulum (binary)
+## Install (binary)
 
-Build edilmiş binary'ler GitHub Releases'ten indirilir (repo içinde binary tutulmaz):
+Prebuilt binaries are distributed via GitHub Releases (no binaries are
+committed to the repository):
 
 ```bash
-# örnek: v1.0.0, linux-arm64
+# example: linux-arm64
 curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.0.0/agent-arm64
 chmod +x agent && sudo mv agent /usr/local/bin/agent
 ```
 
-Kaynaktan: `bun run build:arm64` / `bun run build:x64` (çıktı `dist/`).
+Build from source: `bun run build:arm64` / `bun run build:x64` (output in `dist/`).
 
-## Kullanım
+## Usage
 
 ```bash
-agent setup     # bootstrap token ile tek seferlik claim + config + systemd unit
-agent run       # tünel çalıştır
+agent setup     # single-use bootstrap claim + config + systemd unit
+agent run       # start the tunnel
 agent config show
 agent uninstall
 ```
 
-Env: `HUB_URL`, `PEER_ID`, `SERVICE_ID`, `LOCAL_TARGET`, `PEER_TOKEN` ∨
-`BOOTSTRAP_TOKEN` ∨ `PEER_SECRET`, `TLS_INSECURE` (yalnız https hedefte etkin).
-Config dosyası **0600**; kalıcı `PEER_SECRET` env token'ını ezer.
+Env: `HUB_URL`, `PEER_ID`, `SERVICE_ID`, `LOCAL_TARGET`, `PEER_TOKEN` or
+`BOOTSTRAP_TOKEN` or `PEER_SECRET`, `TLS_INSECURE` (only effective for https
+targets). The config file is written with mode **0600**; a persisted
+`PEER_SECRET` overrides the env token.
 
-Sözleşmeler: [`../docs/AGENT-MIMARISI.md`](../docs/AGENT-MIMARISI.md),
+Contracts: [`../docs/AGENT-MIMARISI.md`](../docs/AGENT-MIMARISI.md),
 [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md).

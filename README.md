@@ -36,30 +36,31 @@ docker run -p 5003:5003 \
   ilterisyucel/zero-trust-application-channel-hub:1.0.0
 ```
 
-(`ilerisyucel` yerine kendi Docker Hub kullanıcı/org adınız; imaj etiketleri
-repo release'leriyle birlikte yayınlanır. Alternatif: `docker build -f hub/Dockerfile .`)
+Replace `ilterisyucel` with your own Docker Hub user/org. Image tags are
+published alongside repository releases. Alternatively, build locally:
+`docker build -f hub/Dockerfile .`
 
 ### Agent (binary)
 
-Build edilmiş binary'ler GitHub **Releases** üzerinden indirilir (repo içinde
-binary tutulmaz):
+Prebuilt binaries are distributed via GitHub **Releases** (no binaries are
+committed to the repository):
 
 ```bash
-# örnek: v1.0.0, linux-arm64
+# example: linux-arm64
 curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.0.0/agent-arm64
 chmod +x agent && sudo mv agent /usr/local/bin/agent
-agent run    # veya: agent setup → systemd unit
+agent run    # or: agent setup → systemd unit
 ```
 
-Kaynaktan derleme: `bun run build:agent:arm64` / `bun run build:agent:x64`.
+Build from source: `bun run build:agent:arm64` / `bun run build:agent:x64`.
 
-## Contracts (kısa)
+## Contracts (short)
 
-- `decode` asla throw etmez; wire **v2-only** (`peerId` + zorunlu `peerType`).
-- Tek outbound WS: kontrol mesajları + binary frame'ler aynı kanaldan.
-- Hub/agent `lib`'e `^1.0.0` ile bağlıdır (workspace link); `lib` monorepo'dan
-  bağımsızdır — `ws` + `zod` (+ opsiyonel `jose` test yardımcısı).
-- Tam sözleşmeler: [`docs/CONTRACTS.md`](docs/CONTRACTS.md).
+- `decode` never throws; wire protocol is **v2-only** (`peerId` + required `peerType`).
+- Single outbound WS: control messages and binary frames share the same channel.
+- `hub`/`agent` depend on `lib` via `^1.0.0` (workspace link in this repo); `lib`
+  has no application imports — only `ws` + `zod` (+ optional `jose` test helper).
+- Full contracts: [`docs/CONTRACTS.md`](docs/CONTRACTS.md).
 
 ## Docs
 
