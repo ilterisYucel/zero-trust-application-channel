@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { tmpdir } from "node:os";
 /**
  * run-demo.mjs — iki mini web uygulamasının hub üzerinden testi (P4 UC-2).
  *
@@ -33,7 +34,7 @@ const waitFor = async (fn, timeoutMs = 8000) => {
   return true;
 };
 
-const dbPath = `/tmp/opencode/hub-examples-${Date.now()}.db`;
+const dbPath = `${tmpdir()}/hub-examples-${Date.now()}.db`;
 const composition = await createHub(
   {
     host: "127.0.0.1",

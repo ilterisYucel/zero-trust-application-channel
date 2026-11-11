@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import {
   ReconnectDelay,
   TunnelConnector,
@@ -48,9 +50,8 @@ function adminHeaders(): Record<string, string> {
 
 describe("bootstrap uçtan uca (sqlite)", () => {
   it("AK-4.2: bootstrap → claim → register → revoke", async () => {
-    const dbPath = `/tmp/opencode/hub-bootstrap-${Date.now()}-${Math.random()
-      .toString(16)
-      .slice(2)}.db`;
+    const tempDir = mkdtempSync(join(tmpdir(), "ztac-hub-"));
+    const dbPath = join(tempDir, "hub.db");
     const composition = await createHub(makeConfig(dbPath), {
       createDatabase: (path) => new NodeSqliteDatabase(path),
     });
@@ -145,7 +146,7 @@ describe("bootstrap uçtan uca (sqlite)", () => {
     } finally {
       if (connector !== undefined) await connector.stop();
       await composition.stop();
-      rmSync(dbPath, { force: true });
+      rmSync(tempDir, { recursive: true, force: true });
     }
   }, 20_000);
 });

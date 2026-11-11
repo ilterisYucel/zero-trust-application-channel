@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { tmpdir } from "node:os";
 /**
  * revpi-agent-check.mjs — Aşama 4 tek çalıştırılabilir kontrol.
  *
@@ -26,8 +27,8 @@ const PEER_ID = "revpi-1";
 const SERVICE_ID = "revpi-dashboard";
 const CONSUMER_TOKEN = "check-consumer-token";
 const PEER_TOKEN = "check-peer-token";
-const CERT = "/tmp/opencode/revpi-check-c.pem";
-const KEY = "/tmp/opencode/revpi-check-k.pem";
+const CERT = `${tmpdir()}/revpi-check-c.pem`;
+const KEY = `${tmpdir()}/revpi-check-k.pem`;
 const BASIC = `Basic ${Buffer.from("pi:pw").toString("base64")}`;
 
 let failures = 0;
@@ -162,7 +163,7 @@ const hubBase = `http://127.0.0.1:${composition.server.addresses()[0].port}`;
 const tlsMaterial = loadTlsMaterial({
   selfSigned: true,
   host: "localhost",
-  dir: "/tmp/opencode/hub-check-tls",
+  dir: `${tmpdir()}/hub-check-tls`,
 });
 const extraServers = attachExtraPorts(composition.server, [mountPort], tlsMaterial);
 

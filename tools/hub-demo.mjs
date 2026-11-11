@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+import { tmpdir } from "node:os";
 /**
  * hub-demo.mjs — hub-servis loopback doğrulaması (P4 UC-1, docker'sız).
  *
@@ -78,7 +79,7 @@ const upstreamPort = upstream.address().port;
 const upstreamBase = `http://127.0.0.1:${upstreamPort}`;
 
 // --- Hub-servis (process-içi, sqlite) ---
-const dbPath = `/tmp/opencode/hub-demo-${Date.now()}.db`;
+const dbPath = `${tmpdir()}/hub-demo-${Date.now()}.db`;
 const composition = await createHub(
   {
     host: "127.0.0.1",
