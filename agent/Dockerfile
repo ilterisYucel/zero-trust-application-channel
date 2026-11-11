@@ -11,6 +11,7 @@ RUN bun install --frozen-lockfile
 COPY tsconfig.base.json ./tsconfig.base.json
 COPY lib/src lib/src
 COPY agent agent
+RUN cd lib && bun build src/index.ts --outdir dist --target bun --external ws --external zod
 
 # Hedef mimariye göre tek dosya binary (TARGETARCH: amd64 | arm64).
 ARG TARGETARCH
