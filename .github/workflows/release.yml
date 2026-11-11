@@ -1,8 +1,8 @@
 # Tag ile yayın: npm (lib) + Docker Hub (hub/agent).
 #
-# Gerekli GitHub secret'ları:
-#   NPM_TOKEN          — npm granular token (Bypass 2FA, read-write)
-#   DOCKERHUB_USERNAME — Docker Hub kullanıcı adı
+# Gerekli GitHub secret'lar:
+#   NPM_TOKEN          — npm granular token (read-write + bypass 2FA)
+#   DOCKERHUB_USERNAME — Docker Hub kullanıcı adı (ör. ilterisyucel)
 #   DOCKERHUB_TOKEN    — Docker Hub access token (read-write)
 name: Release
 
@@ -19,7 +19,10 @@ jobs:
         with:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile
-      - run: cd lib && bun publish --access public
+      - name: Publish lib to npm
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > lib/.npmrc
+          cd lib && bun publish --access public
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
