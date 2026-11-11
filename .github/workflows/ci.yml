@@ -14,6 +14,7 @@ jobs:
         with:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile
+      # lib tipleri/dist'i olmadan hub/agent typecheck'i geçmez (workspace paketi).
+      - run: bun run --cwd lib build
       - run: bun run typecheck
       - run: bun run test
-      - run: bun run --cwd lib build
