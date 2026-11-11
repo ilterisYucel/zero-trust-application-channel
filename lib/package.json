@@ -1,6 +1,6 @@
 {
   "name": "zero-trust-application-channel",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Zero-trust application channel core: binary frame codec, v2 wire protocol, peer connector, stream multiplexing client, session gateway and HTTP/WS tunnel proxy. Transport-only, domain-free.",
   "license": "MIT",
   "author": "Ilteris Yucel",

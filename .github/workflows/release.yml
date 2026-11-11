@@ -19,6 +19,14 @@ jobs:
         with:
           bun-version: 1.4.3
       - run: bun install --frozen-lockfile
+      - name: npm auth preflight
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -z "$NPM_TOKEN" ]; then echo "::error::NPM_TOKEN secret bos/eksik (repo Settings > Secrets)"; exit 1; fi
+          echo "token length: ${#NPM_TOKEN}"
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
+          npm whoami || { echo "::error::npm whoami basarisiz — token gecersiz/2FA bypass yok"; exit 1; }
       - name: Publish lib to npm
         run: |
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > lib/.npmrc
