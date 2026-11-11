@@ -1,0 +1,21 @@
+# Hub — compose örneği (Docker Hub imajıyla).
+#
+#   docker compose -f hub/compose.example.yml up
+services:
+  hub:
+    # Kendi Docker Hub kullanıcı/org adınızla değiştirin.
+    image: ${HUB_IMAGE:-ilterisyucel/zero-trust-application-channel-hub:1.0.0}
+    environment:
+      PORT: "5003"
+      PEER_TOKEN: ${PEER_TOKEN:-demo-peer-token}
+      CONSUMER_TOKEN: ${CONSUMER_TOKEN:-demo-consumer-token}
+      HUB_DB_PATH: "/data/hub.db"
+      HUB_ALLOWED_PREFIXES: "/assets/,/static/"
+    ports:
+      - "5003:5003"
+    volumes:
+      - hub-data:/data
+    restart: unless-stopped
+
+volumes:
+  hub-data:

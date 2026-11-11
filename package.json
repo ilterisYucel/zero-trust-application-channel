@@ -1,0 +1,22 @@
+{
+  "name": "zero-trust-application-channel-repo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun run --cwd lib test && bun run --cwd hub test && bun run --cwd agent test",
+    "build": "bun run --cwd lib build && bun run --cwd hub build",
+    "typecheck": "bun run --cwd lib typecheck && bun run --cwd hub typecheck && bun run --cwd agent typecheck",
+    "build:agent:arm64": "bun run --cwd agent build:arm64",
+    "build:agent:x64": "bun run --cwd agent build:x64"
+  },
+  "workspaces": [
+    "lib",
+    "hub",
+    "agent"
+  ],
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}

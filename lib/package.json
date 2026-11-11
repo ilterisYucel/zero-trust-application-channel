@@ -1,0 +1,63 @@
+{
+  "name": "zero-trust-application-channel",
+  "version": "1.0.0",
+  "description": "Zero-trust application channel core: binary frame codec, v2 wire protocol, peer connector, stream multiplexing client, session gateway and HTTP/WS tunnel proxy. Transport-only, domain-free.",
+  "license": "MIT",
+  "author": "Ilteris Yucel",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ilterisYucel/zero-trust-application-channel.git"
+  },
+  "homepage": "https://github.com/ilterisYucel/zero-trust-application-channel#readme",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./test-helpers": {
+      "types": "./dist/session/__test-helpers__/jose-signer.d.ts",
+      "default": "./dist/session/__test-helpers__/jose-signer.js"
+    }
+  },
+  "files": ["dist", "README.md", "LICENSE"],
+  "keywords": [
+    "zero-trust",
+    "tunnel",
+    "websocket",
+    "reverse-proxy",
+    "multiplexing"
+  ],
+  "engines": {
+    "node": ">=20",
+    "bun": ">=1.4.0"
+  },
+  "scripts": {
+    "build": "rm -rf dist tsconfig.tsbuildinfo && bun build src/index.ts --outdir dist --target node --external ws --external zod --external jose && bun build src/session/__test-helpers__/jose-signer.ts --outdir dist/session/__test-helpers__ --target node --external jose && tsc --emitDeclarationOnly",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
+    "prepublishOnly": "bun run build && bun run test"
+  },
+  "dependencies": {
+    "ws": "^8.0.0",
+    "zod": "^3.25.0"
+  },
+  "peerDependencies": {
+    "jose": "^5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "jose": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/ws": "^8.0.0",
+    "jose": "^5.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}

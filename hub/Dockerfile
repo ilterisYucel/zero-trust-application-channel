@@ -1,0 +1,37 @@
+# Hub imajı — repo kök bağlamından derlenir:
+#   docker build -f hub/Dockerfile -t <dockerhub-user>/zero-trust-application-channel-hub:1.0.0 .
+FROM oven/bun:1.4.3@sha256:ec06c3b6cea04192ae6770c434f668ca41d343ad19fa6472216c7b48be39c598 AS build
+WORKDIR /app
+
+COPY package.json bun.lock ./
+COPY lib/package.json lib/package.json
+COPY hub/package.json hub/package.json
+RUN bun install --frozen-lockfile
+
+COPY tsconfig.base.json ./tsconfig.base.json
+COPY lib/src lib/src
+COPY hub hub
+RUN cd lib && bun build src/index.ts --outdir dist --target bun --external ws --external zod
+RUN cd hub && bun build src/main.ts --outdir dist --target bun --external zero-trust-application-channel --external fastify --external @fastify/websocket --external ws
+
+FROM oven/bun:1.4.3-slim@sha256:14a223fa35747ec728bce300ef85888bc5f7958164d15bbba6a54b22b52a3288
+WORKDIR /app
+# Self-signed TLS üretimi (HUB_TLS_ENABLED=1) için openssl.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends openssl \
+  && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app/hub/dist ./dist
+# Çalışma zamanı: harici bağımlılıklar (fastify/ws/zero-trust-application-channel) dosya sisteminden çözülür.
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/lib/dist ./node_modules/zero-trust-application-channel/dist
+COPY --from=build /app/lib/package.json ./node_modules/zero-trust-application-channel/package.json
+
+ENV PORT=5003
+ENV HUB_DB_PATH=/data/hub.db
+EXPOSE 5003
+VOLUME ["/data"]
+
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
+  CMD bun -e "fetch('http://127.0.0.1:'+(process.env.PORT||5003)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+CMD ["bun", "run", "dist/main.js"]
