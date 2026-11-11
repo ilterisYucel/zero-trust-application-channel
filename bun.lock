@@ -34,7 +34,7 @@
     },
     "lib": {
       "name": "zero-trust-application-channel",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "dependencies": {
         "ws": "^8.0.0",
         "zod": "^3.25.0",
