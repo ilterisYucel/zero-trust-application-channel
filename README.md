@@ -37,9 +37,44 @@ npm install zero-trust-application-channel
 # or: bun add zero-trust-application-channel
 ```
 
+Peer (client) side — one outbound WS carries register, control messages and
+tunnel streams; the local service becomes reachable through the hub without
+any inbound port:
+
 ```ts
-import { Result, TunnelConnector, WsSocketClientFactory } from "zero-trust-application-channel";
+import {
+  ReconnectDelay,
+  TunnelClient,
+  TunnelConnector,
+  WsSocketClientFactory,
+} from "zero-trust-application-channel";
+
+const connector = new TunnelConnector(
+  {
+    wsUrls: ["wss://hub.example.com/ws/peer"],
+    token: process.env.PEER_TOKEN ?? "",
+    peerId: "gateway-1",
+    peerType: "device",
+    services: [{ id: "local-admin" }],
+    heartbeatIntervalMs: 15_000,
+    registerTimeoutMs: 5_000,
+    livenessTimeoutMs: 45_000,
+  },
+  new WsSocketClientFactory(),
+  new ReconnectDelay({ baseMs: 200, maxMs: 2_000, jitterSpanMs: 0, jitter: () => 0 }),
+);
+
+const client = TunnelClient.create({
+  webServiceUrl: "http://localhost:3000",
+  staticUrl: "http://localhost:3000",
+});
+client.attach(connector);
+await connector.start();
 ```
+
+The hub side (`SessionGateway` + `TunnelProxy`) is the `hub/` service below, or
+embedded in your own app by injecting `IHubChannel`/`IStreamSink`/`IAuditSink`
+adapters — see [`docs/CONTRACTS.md`](docs/CONTRACTS.md).
 
 ### Hub (Docker)
 
@@ -49,7 +84,7 @@ docker run -p 5003:5003 \
   -e CONSUMER_TOKEN="${CONSUMER_TOKEN}" \
   -e HUB_DB_PATH=/data/hub.db \
   -v hub-data:/data \
-  ilterisyucel/zero-trust-application-channel-hub:1.0.0
+  ilterisyucel/zero-trust-application-channel-hub:1.1.3
 ```
 
 Replace `ilterisyucel` with your own Docker Hub user/org. Image tags are
@@ -63,7 +98,7 @@ committed to the repository):
 
 ```bash
 # example: linux-arm64
-curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.0.0/agent-arm64
+curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.1.3/agent-arm64
 chmod +x agent && sudo mv agent /usr/local/bin/agent
 agent run    # or: agent setup → systemd unit
 ```
