@@ -67,7 +67,7 @@ Build from the repository root:
 
 ```bash
 # published image:
-docker run -p 5003:5003 -e PEER_TOKEN=... -e CONSUMER_TOKEN=... -e HUB_DB_PATH=/data/hub.db -v hub-data:/data ilterisyucel/zero-trust-application-channel-hub:1.2.0
+docker run -p 5003:5003 -e PEER_TOKEN=... -e CONSUMER_TOKEN=... -e HUB_DB_PATH=/data/hub.db -v hub-data:/data ilterisyucel/zero-trust-application-channel-hub:1.2.1
 
 # or build locally:
 docker build -f hub/Dockerfile -t hub .

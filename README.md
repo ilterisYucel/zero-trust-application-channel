@@ -84,7 +84,7 @@ docker run -p 5003:5003 \
   -e CONSUMER_TOKEN="${CONSUMER_TOKEN}" \
   -e HUB_DB_PATH=/data/hub.db \
   -v hub-data:/data \
-  ilterisyucel/zero-trust-application-channel-hub:1.2.0
+  ilterisyucel/zero-trust-application-channel-hub:1.2.1
 ```
 
 Replace `ilterisyucel` with your own Docker Hub user/org. Image tags are
@@ -98,7 +98,7 @@ committed to the repository):
 
 ```bash
 # example: linux-arm64
-curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.2.0/agent-arm64
+curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.2.1/agent-arm64
 chmod +x agent && sudo mv agent /usr/local/bin/agent
 agent run    # or: agent setup → systemd unit
 ```
