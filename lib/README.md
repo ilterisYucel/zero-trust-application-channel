@@ -3,12 +3,11 @@
 Generic, multiplexed WebSocket tunnel: HTTP/WS reverse-proxying and session
 management over a single outbound connection. This package is the **core
 library** — independent of any application or monorepo. Domain adapters
-(Fastify/PG/container proxies) live in the consuming project.
+(e.g. Fastify handlers, stream sinks) live in the consuming project.
 
-**Two deployments, one package (v2):** the same generic package serves both
-**field→container** and **field→boss** topologies — the register schema is
-neutral (`peerId` + `peerType`), and session/cookie/allowlist behaviour is
-injected via config (see [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md)).
+**One package, any deployment (v2):** the register schema is neutral
+(`peerId` + `peerType`), and session/cookie/allowlist behaviour is injected via
+config (see [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md)).
 
 **Origin:** built because software on internet-isolated field devices
 (battery-storage containers, industrial edge hardware) had to be reachable
@@ -23,13 +22,13 @@ domain-free.
 | Module | Responsibility |
 |---|---|
 | `codec` | Binary frame codec — 9-byte header (streamId u32 BE + seq u32 BE + flags FIN/RST/WS_OP); `decode` never throws (`Result`) |
-| `protocol` | Control message types + zod schemas (register/ack — v2 `peerId` + `peerType`, heartbeat, telemetry, stream-*, open-session/*); `TUNNEL_PROTOCOL_VERSION = 2` |
+| `protocol` | Control message types + zod schemas (register/ack — v2 `peerId` + `peerType`, config-update, heartbeat, stream-*, open-session/*, session-end); `TUNNEL_PROTOCOL_VERSION = 2` |
 | `connector` | `TunnelConnector` — outbound WS client + state machine + exponential backoff (`ReconnectDelay`) |
 | `channel` | `ISocketClient`/`WsSocketClient` (ws adapter), `ITunnelChannel` (client side), `IHubChannel` (hub side, carries peerId) |
 | `client` | `TunnelClient` — stream multiplexing, credit-based backpressure, dual upstream routing, WS bridge |
 | `session` | `ClientSessionStore` + `ClientSessionServer` — ephemeral session JWT (`ITokenSigner` injection) |
 | `proxy` | `SessionGateway` + `HubSessionStore` + `TunnelProxy` — hub-side session + HTTP/WS proxy (`IHubChannel`/`IStreamSink`/`IAuditSink` injection; cookieName + PathAllowlist config) |
-| `logger` / `token` / `audit` / `snapshot` / `types` | Independence contracts — minimal `ILogger`, `ITokenSigner`, `IAuditSink`, `ISnapshotSource`, generic `TunnelRole`/`TunnelUser`/`TunnelTelemetryPoint` |
+| `logger` / `token` / `audit` / `types` | Independence contracts — minimal `ILogger`, `ITokenSigner`, `IAuditSink`, generic `TunnelRole`/`TunnelUser` |
 
 ## Dependencies
 
@@ -55,8 +54,8 @@ bun run test   # includes loopback.spec.ts
 
 - `bun run test` — unit + spec + loopback end-to-end
 - `bun run typecheck` — `tsc --noEmit` (production code, tests excluded)
-- Security-critical modules (codec, connector, client, proxy) target ≥90%
-  branch coverage.
+- Security-critical modules (frame codec, connector, client, session-gateway,
+  tunnel-proxy) target ≥90% branch coverage.
 
 ## Contract summary
 
