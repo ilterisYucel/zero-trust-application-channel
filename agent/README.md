@@ -10,7 +10,7 @@ committed to the repository):
 
 ```bash
 # example: linux-arm64
-curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.1.3/agent-arm64
+curl -L -o agent https://github.com/ilterisYucel/zero-trust-application-channel/releases/download/v1.2.0/agent-arm64
 chmod +x agent && sudo mv agent /usr/local/bin/agent
 ```
 
