@@ -30,5 +30,5 @@ Env: `HUB_URL`, `PEER_ID`, `SERVICE_ID`, `LOCAL_TARGET`, `PEER_TOKEN` or
 targets). The config file is written with mode **0600**; a persisted
 `PEER_SECRET` overrides the env token.
 
-Contracts: [`../docs/AGENT-MIMARISI.md`](../docs/AGENT-MIMARISI.md),
+Contracts: [`../docs/AGENT-SPEC.md`](../docs/AGENT-SPEC.md),
 [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md).

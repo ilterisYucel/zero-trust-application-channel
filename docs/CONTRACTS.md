@@ -1,54 +1,54 @@
 # Contracts (MANDATORY)
 
-Bu dosya, tünel protokolüne/oturuma dokunan geliştiriciler için bağlayıcı
-sözleşmeleri taşır. Kaynak SPEC'ler: [LIB](LIB-MIMARISI.md), [HUB](HUB-MIMARISI.md),
-[AGENT](AGENT-MIMARISI.md).
+This file carries the binding contracts for developers touching the tunnel
+protocol/session. Source SPECs: [LIB](LIB-SPEC.md), [HUB](HUB-SPEC.md),
+[AGENT](AGENT-SPEC.md).
 
-## Connector sözleşmesi
+## Connector contract
 
-- **Tek outbound WS:** peer→hub yalnızca outbound WSS; inbound TCP/HTTP YOKTUR.
-  Kontrol mesajları ve tünel stream'leri AYNI kanaldan geçer (text = kontrol,
-  binary = akış).
-- **Durum makinesi:** `offline → connecting → registered → connected ↔ backoff`.
-  Hata/401/register-timeout → backoff (`exp(2^n·1s)+jitter`, tavan 60 sn);
-  `stop()` → offline. `generation` koruması: bayat soket olayları yok sayılır.
+- **Single outbound WS:** peer→hub is outbound WSS only; there is NO inbound TCP/HTTP.
+  Control messages and tunnel streams share the SAME channel (text = control,
+  binary = flow).
+- **State machine:** `offline → connecting → registered → connected ↔ backoff`.
+  Error/401/register-timeout → backoff (`exp(2^n·1s)+jitter`, cap 60 s);
+  `stop()` → offline. `generation` guard: stale socket events are ignored.
 - **Register (v2-only):** `{ type:"register", peerId, peerType, protocolVersion:2 }`;
-  v2 dışı şema (`containerId` vb.) kabul edilmez — hub farklı `protocolVersion`'ı reddeder.
-- **Operational config:** `register-ack.config` / `config-update` → zod (STRICT değil,
-  bilinmeyen anahtar strip) → geçerliyse restart'sız uygulanır; geçersiz →
-  `configRejected`, eski config korunur.
-- **Liveness:** her heartbeat'te ping; `livenessTimeoutMs` pong yoksa kapat + backoff.
+  non-v2 shapes (`containerId` etc.) are rejected — the hub rejects a different `protocolVersion`.
+- **Operational config:** `register-ack.config` / `config-update` → zod (not STRICT,
+  unknown keys stripped) → if valid, applied without restart; invalid →
+  `configRejected`, previous config is kept.
+- **Liveness:** ping on every heartbeat; `livenessTimeoutMs` without pong → close + backoff.
 
-## Tünel stream sözleşmesi
+## Tunnel stream contract
 
-- **Binary frame:** 9 bayt başlık (streamId u32 BE + seq u32 BE + flags);
-  flags `FIN 0x01 | RST 0x02 | WS_OP 0x04`. `decode` **asla throw etmez**
-  (`Result`); encode programcı hatasında throw eder. `seq` iki tarafta AYRI sayaç.
-- **Yaşam döngüsü:** streamId'yi HUB atar; `stream-open` → `stream-open-ack` →
-  binary gövde (≤64 KiB parça) → `FIN`; hata → `RST`. Kredi (`stream-window`)
-  yoksa gövde DURUR (deadlock yok — idle sweep kapatır).
-- **Limitler:** peer başına 1 etkileşimli oturum, 16 eşzamanlı stream,
-  pencere 256 KiB, oturum TTL 4 sa / idle 15 dk, stream idle 5 dk;
-  stale eşiği 45 sn, sweep 1 sn.
+- **Binary frame:** 9-byte header (streamId u32 BE + seq u32 BE + flags);
+  flags `FIN 0x01 | RST 0x02 | WS_OP 0x04`. `decode` **never throws**
+  (`Result`); encode throws on programmer error. `seq` is a SEPARATE counter per side.
+- **Lifecycle:** the HUB assigns streamId; `stream-open` → `stream-open-ack` →
+  binary body (≤64 KiB chunks) → `FIN`; error → `RST`. Without credit (`stream-window`)
+  the body STOPS (no deadlock — the idle sweep closes it).
+- **Limits:** 1 interactive session per peer, 16 concurrent streams,
+  256 KiB window, session TTL 4 h / idle 15 min, stream idle 5 min;
+  stale threshold 45 s, sweep 1 s.
 
-## Oturum sözleşmesi
+## Session contract
 
-- `open-session` → peer KENDİ secret'iyle JWT üretir (`ITokenSigner`).
-  Agent signer'ı `type:"container-session"` etiketini basar ve doğrular; lib
-  payload'ı etiketi tanımlamaz — tüketici signer'ı da basmalıdır. →
-  `open-session-ack`. Cookie adı tüketici enjekte eder (varsayılan nötr
-  `tunnel_session`); **Path-scoped**, HttpOnly uygulamak tüketicinin işidir.
-- Kullanıcı peer DB'sine ASLA yazılmaz. Rol eşlemesi hub'da birebirdir
+- `open-session` → the peer produces a JWT with its OWN secret (`ITokenSigner`).
+  The agent signer stamps and verifies the `type:"container-session"` tag; the lib
+  payload does not define the tag — consumer signers must stamp it too. →
+  `open-session-ack`. The consumer injects the cookie name (neutral default
+  `tunnel_session`); **Path-scoped**, HttpOnly is the consumer's job.
+- A user is NEVER written to the peer DB. Role mapping in the hub is one-to-one
   (`admin→admin`, `teknik→teknik`, `boss→boss`, `guest→guest`, `developer→developer`
-  — bkz. `lib/src/proxy/session-gateway.ts#mapSessionRole`).
-- **Audit fail-closed:** `IAuditSink.open` yazılamazsa oturum AÇILMAZ.
+  — see `lib/src/proxy/session-gateway.ts#mapSessionRole`).
+- **Audit fail-closed:** if `IAuditSink.open` cannot be written, the session is NOT opened.
 
-## Paket sınırı
+## Package boundary
 
-- `lib` yalnız `ws` + `zod` kullanır (test yardımcısı `jose` opsiyonel peer).
-  Herhangi bir uygulama importu YASAK — iş/telemetri kavramı ve HTTP route
-  pakete giremez.
-- Keşif + erişim tüketicide yaşar; duyuru opaktır (`id` + kozmetik `meta`),
-  hedef adres/protocol/health/endpoint alanları STRICT şemada REDDEDİLİR.
-- Enjeksiyonlar: cookie adı, allowlist/blocklist, connector log kodları
-  (`eventCodes`), upstream kuralı (`routeUpstream`) — varsayılanlar nötr.
+- `lib` uses only `ws` + `zod` (the test helper `jose` is an optional peer).
+  Any application import is FORBIDDEN — business/telemetry concepts and HTTP routes
+  cannot enter the package.
+- Discovery + access live in the consumer; the announcement is opaque (`id` + cosmetic `meta`),
+  target address/protocol/health/endpoint fields are REJECTED by the STRICT schema.
+- Injections: cookie name, allowlist/blocklist, connector log codes
+  (`eventCodes`), upstream rule (`routeUpstream`) — defaults are neutral.

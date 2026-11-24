@@ -73,5 +73,5 @@ const proxy = new TunnelProxy(channel, store, logger);
 ```
 
 The tunnel does NOT interpret roles: `TunnelRole` is a free string — mapping
-and RBAC belong to the consumer. Detailed protocol: [`../docs/LIB-MIMARISI.md`](../docs/LIB-MIMARISI.md)
+and RBAC belong to the consumer. Detailed protocol: [`../docs/LIB-SPEC.md`](../docs/LIB-SPEC.md)
 and [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md).

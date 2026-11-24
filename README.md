@@ -115,7 +115,7 @@ Build from source: `bun run build:agent:arm64` / `bun run build:agent:x64`.
 
 ## Docs
 
-- [lib SPEC](docs/LIB-MIMARISI.md) · [hub SPEC](docs/HUB-MIMARISI.md) · [agent SPEC](docs/AGENT-MIMARISI.md) · [contracts](docs/CONTRACTS.md)
+- [lib SPEC](docs/LIB-SPEC.md) · [hub SPEC](docs/HUB-SPEC.md) · [agent SPEC](docs/AGENT-SPEC.md) · [contracts](docs/CONTRACTS.md)
 
 ## Development
 

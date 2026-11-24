@@ -4,7 +4,7 @@ The **hub service** for the channel: peer registration, discovery, opaque
 service access and consumer relay. Hexagonal (ports & adapters) architecture —
 the domain/application layers know nothing about Fastify/ws/sqlite.
 
-> SPEC: [HUB-MIMARISI.md](../docs/HUB-MIMARISI.md)
+> SPEC: [HUB-SPEC.md](../docs/HUB-SPEC.md)
 
 ## Layers
 

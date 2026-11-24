@@ -7,6 +7,7 @@
     "build": "bun run --cwd lib build && bun run --cwd hub build",
     "typecheck": "bun run --cwd lib typecheck && bun run --cwd hub typecheck && bun run --cwd agent typecheck",
     "check": "bun tools/check-contracts.ts && bun tools/hub-arch-checks.mjs",
+    "release": "bun tools/release.mjs",
     "build:agent:arm64": "bun run --cwd agent build:arm64",
     "build:agent:x64": "bun run --cwd agent build:x64"
   },

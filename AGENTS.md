@@ -4,7 +4,7 @@ Generic, multiplexed WebSocket tunnel. **MIT · npm `zero-trust-application-chan
 
 This file is the binding starting point for agents working in this repo.
 Contracts: [`docs/CONTRACTS.md`](docs/CONTRACTS.md). SPECs:
-[`docs/LIB-MIMARISI.md`](docs/LIB-MIMARISI.md) · [`docs/HUB-MIMARISI.md`](docs/HUB-MIMARISI.md) · [`docs/AGENT-MIMARISI.md`](docs/AGENT-MIMARISI.md).
+[`docs/LIB-SPEC.md`](docs/LIB-SPEC.md) · [`docs/HUB-SPEC.md`](docs/HUB-SPEC.md) · [`docs/AGENT-SPEC.md`](docs/AGENT-SPEC.md).
 
 ## Quick commands
 
@@ -86,8 +86,10 @@ Architecture contracts are locked by deterministic scripts, not review
   semver; breaking change = MAJOR + SPEC revision.
 - **hub/agent:** Docker Hub (`ilterisyucel/zero-trust-application-channel-{hub,agent}`,
   tag = version + `latest`); agent also ships GitHub Releases binaries (`agent-arm64/x64`).
-- Tag `v<semver>` → `release.yml` (npm + Docker Hub + GitHub Releases binaries;
-  secrets: `NPM_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`).
+- **One-command release:** `bun run release patch|minor|major` — runs
+  typecheck/check/test, bumps `lib/package.json`, commits, tags `v<semver>` and
+  pushes; the tag triggers `release.yml` (npm + Docker Hub + GitHub Releases
+  binaries; secrets: `NPM_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`).
 
 ## Related
 

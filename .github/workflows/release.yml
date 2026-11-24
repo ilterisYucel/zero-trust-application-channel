@@ -1,8 +1,8 @@
-# Tag ile yayın: npm (lib) + Docker Hub (hub/agent) + GitHub Releases (agent binaries).
+# Tag release: npm (lib) + Docker Hub (hub/agent) + GitHub Releases (agent binaries).
 #
-# Gerekli GitHub secret'lar:
-#   NPM_TOKEN          — npm granular token (read-write + bypass 2FA)
-#   DOCKERHUB_USERNAME — Docker Hub kullanıcı adı (ör. ilterisyucel)
+# Required GitHub secrets:
+#   NPM_TOKEN          — npm granular token (read-write + 2FA bypass)
+#   DOCKERHUB_USERNAME — Docker Hub username (e.g. ilterisyucel)
 #   DOCKERHUB_TOKEN    — Docker Hub access token (read-write)
 name: Release
 
@@ -11,7 +11,23 @@ on:
     tags: ["v*"]
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Fail fast before any publish when the tag and lib version diverge.
+      - name: Tag ↔ lib version guard
+        run: |
+          tagver="${GITHUB_REF_NAME#v}"
+          libver=$(node -p "require('./lib/package.json').version")
+          if [ "$tagver" != "$libver" ]; then
+            echo "::error::tag v$tagver != lib/package.json $libver — use 'bun run release <patch|minor|major>'"
+            exit 1
+          fi
+          echo "tag v$tagver == lib $libver"
+
   npm-lib:
+    needs: guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,6 +51,7 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   docker:
+    needs: guard
     runs-on: ubuntu-latest
     strategy:
       matrix:
