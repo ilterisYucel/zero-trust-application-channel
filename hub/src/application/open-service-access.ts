@@ -7,13 +7,13 @@ import {
 } from "zero-trust-application-channel";
 import type {
   DomainError,
-  HubPeerRegistry,
   HubSession,
   PathAllowlist,
-  SessionGateway,
   TunnelUser,
 } from "zero-trust-application-channel";
-import type { PeerConnectionTracker } from "../domain/peer-connection-tracker";
+import type { IPeerConnectionTracker } from "../domain/ports/peer-connection-tracker";
+import type { IPeerRegistry } from "../domain/ports/peer-registry";
+import type { ISessionGateway } from "../domain/ports/session-gateway";
 
 /** Erişim yapılandırması (hexagonal — env'den adapter besler). */
 export interface OpenServiceAccessConfig {
@@ -55,9 +55,9 @@ export interface AccessGrant {
  */
 export class OpenServiceAccess {
   constructor(
-    private readonly registry: HubPeerRegistry,
-    private readonly tracker: PeerConnectionTracker,
-    private readonly gateway: SessionGateway,
+    private readonly registry: IPeerRegistry,
+    private readonly tracker: IPeerConnectionTracker,
+    private readonly gateway: ISessionGateway,
     private readonly config: OpenServiceAccessConfig = {},
   ) {}
 

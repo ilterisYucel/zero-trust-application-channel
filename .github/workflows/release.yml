@@ -1,4 +1,4 @@
-# Tag ile yayın: npm (lib) + Docker Hub (hub/agent).
+# Tag ile yayın: npm (lib) + Docker Hub (hub/agent) + GitHub Releases (agent binaries).
 #
 # Gerekli GitHub secret'lar:
 #   NPM_TOKEN          — npm granular token (read-write + bypass 2FA)
@@ -57,3 +57,29 @@ jobs:
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/zero-trust-application-channel-${{ matrix.component }}:${{ steps.version.outputs.value }}
             ${{ secrets.DOCKERHUB_USERNAME }}/zero-trust-application-channel-${{ matrix.component }}:latest
+
+  binaries:
+    needs: [npm-lib, docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
+      - run: bun install --frozen-lockfile
+      # Agent workspace link lib'in dist'ini bekler (Dockerfile ile aynı sıra).
+      - name: Build lib
+        run: bun run --cwd lib build
+      - name: Build agent binaries
+        run: |
+          bun run build:agent:arm64
+          bun run build:agent:x64
+      - name: Upload binaries to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            agent/dist/agent-arm64
+            agent/dist/agent-x64
+          generate_release_notes: true

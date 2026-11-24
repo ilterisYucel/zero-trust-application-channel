@@ -5,12 +5,12 @@ import {
   serviceAnnouncementSchema,
 } from "zero-trust-application-channel";
 import type {
-  HubPeerRegistry,
   ServiceAnnouncement,
   TunnelPeerType,
 } from "zero-trust-application-channel";
-import type { PeerConnectionTracker } from "../domain/peer-connection-tracker";
-import type { AuthenticatePeerToken } from "./authenticate-peer-token";
+import type { IPeerConnectionTracker } from "../domain/ports/peer-connection-tracker";
+import type { IPeerRegistry } from "../domain/ports/peer-registry";
+import type { IAuthenticatePeerToken } from "./authenticate-peer-token";
 
 /** Register girdisi — güvenilmez frame'den gelir; servisler şema ile doğrulanır. */
 export interface RegisterPeerInput {
@@ -35,9 +35,9 @@ export interface RegisterPeerOutcome {
  */
 export class RegisterPeer {
   constructor(
-    private readonly registry: HubPeerRegistry,
-    private readonly tracker: PeerConnectionTracker,
-    private readonly authenticate: AuthenticatePeerToken,
+    private readonly registry: IPeerRegistry,
+    private readonly tracker: IPeerConnectionTracker,
+    private readonly authenticate: IAuthenticatePeerToken,
   ) {}
 
   async execute(

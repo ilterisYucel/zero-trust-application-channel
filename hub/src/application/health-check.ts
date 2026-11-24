@@ -1,5 +1,5 @@
-import type { HubPeerRegistry } from "zero-trust-application-channel";
-import type { PeerConnectionTracker } from "../domain/peer-connection-tracker";
+import type { IPeerConnectionTracker } from "../domain/ports/peer-connection-tracker";
+import type { IPeerRegistry } from "../domain/ports/peer-registry";
 
 /** Sağlık durumu DTO'su. */
 export interface HealthStatus {
@@ -11,8 +11,8 @@ export interface HealthStatus {
 /** HealthCheck — servis sağlığı use-case'i. */
 export class HealthCheck {
   constructor(
-    private readonly registry: HubPeerRegistry,
-    private readonly tracker: PeerConnectionTracker,
+    private readonly registry: IPeerRegistry,
+    private readonly tracker: IPeerConnectionTracker,
   ) {}
 
   execute(): HealthStatus {

@@ -371,6 +371,7 @@ Hub-servis (hexagonal): peer kaydı/keşfi, oturum kapısı, HTTP/WS proxy, opak
 | SC-1 | Oturum/erişim testli (90+ test) | komut |
 | SC-2 | Audit fail-closed kanıtlı | komut |
 | SC-3 | Düz metin sır yok | kod inceleme |
+| SC-4 | Hexagonal sınır + DIP deterministik denetimli | `bun run check` (CI) |
 
 ## 9. Aşama Eşlemesi (iş akışı)
 

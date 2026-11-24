@@ -2,8 +2,8 @@
 
 Generic, multiplexed WebSocket tunnel. **MIT · npm `zero-trust-application-channel` (lib) · Docker hub/agent.**
 
-Bu dosya bu repoda çalışan ajanlar için bağlayıcı başlangıç noktasıdır.
-Sözleşmeler: [`docs/CONTRACTS.md`](docs/CONTRACTS.md). SPEC'ler:
+This file is the binding starting point for agents working in this repo.
+Contracts: [`docs/CONTRACTS.md`](docs/CONTRACTS.md). SPECs:
 [`docs/LIB-MIMARISI.md`](docs/LIB-MIMARISI.md) · [`docs/HUB-MIMARISI.md`](docs/HUB-MIMARISI.md) · [`docs/AGENT-MIMARISI.md`](docs/AGENT-MIMARISI.md).
 
 ## Quick commands
@@ -12,71 +12,84 @@ Sözleşmeler: [`docs/CONTRACTS.md`](docs/CONTRACTS.md). SPEC'ler:
 bun install
 bun run test              # lib + hub + agent
 bun run typecheck
+bun run check             # deterministic architecture checks (contracts + arch)
 bun run build             # lib dist (npm) + hub bundle
-bun run build:agent:arm64 # tek dosya binary → agent/dist/
+bun run build:agent:arm64 # single-file binary → agent/dist/
 bun run build:agent:x64
 docker build -f hub/Dockerfile .
 docker build -f agent/Dockerfile .
 ```
 
-## Yapı
+## Layout
 
 ```
-lib/    # npm çekirdeği (codec, protocol, connector, channel, client, session, proxy, result)
-hub/    # hub servisi (hexagonal: domain → application → infrastructure; Fastify inbound)
-agent/  # peer agent (CLI: run/setup/wizard/uninstall; systemd + tek binary)
+lib/    # npm core (codec, protocol, connector, channel, client, session, proxy, result)
+hub/    # hub service (hexagonal: domain → application → infrastructure; Fastify inbound)
+agent/  # peer agent (CLI: run/setup/wizard/uninstall; systemd + single binary)
 docs/   # LIB/HUB/AGENT SPEC + CONTRACTS
-tools/  # geliştirici harness'leri (hub-demo, peer-agent, revpi-agent-check, hub-image-parity)
+tools/  # developer harnesses (hub-demo, peer-agent, revpi-agent-check, hub-image-parity)
 ```
 
-`lib` üçünün de temelidir; `hub`/`agent` yalnız `lib`'e bağımlıdır
-(`^1.0.0`, bu repoda workspace-link).
+`lib` is the foundation for all three; `hub`/`agent` depend only on `lib`
+(`^1.0.0`, workspace-linked in this repo).
 
-## Değişmez sözleşmeler (MANDATORY)
+## Invariant contracts (MANDATORY)
 
-1. **Wire v2-only:** `register` = `peerId` + zorunlu `peerType` + `protocolVersion:2`;
-   v1 `containerId` fallback YOKTUR. Sürüm değişikliği MAJOR + göç notu ister.
-2. **Codec:** 9 bayt başlık, `decode` **asla throw etmez** (`Result`); limitler
-   64 KiB chunk / 1 MiB frame. `seq` iki tarafta ayrı sayaçtır (yalnız teşhis).
-3. **Tek outbound WS:** kontrol mesajları (text) + tünel stream'leri (binary)
-   aynı kanaldan geçer; ayrı bağlantı açılmaz.
-4. **Akış tavanları:** peer başına 1 etkileşimli oturum, 16 eşzamanlı stream,
-   256 KiB kredi penceresi, TTL 4 sa / idle 15 dk, 60 sn ölü-socket sweep.
-   Kredi yokken gövde DURUR (deadlock yok).
-5. **Oturum:** `ITokenSigner` enjekte edilir, `type:"container-session"` etiketi
-   zorunludur; kullanıcı peer DB'sine yazılmaz; cookie adı + Path-scoped/HttpOnly
-   tüketicinin işidir. **Audit fail-closed:** `IAuditSink.open` yazılamazsa
-   oturum açılmaz.
-6. **Opaklık:** servis duyurusu yalnız `id` + kozmetik `meta` taşır; hedef
-   adres/protocol/health/endpoint alanları STRICT şemada reddedilir.
-7. **lib domain taşımaz:** telemetri/iş kavramı (BESS/konteyner/field/EMS),
-   HTTP route, uygulama importu YASAK. Tek dış bağımlılık `ws` + `zod`
-   (`jose` yalnız `./test-helpers` için opsiyonel peer).
-8. **Hub hexagonal sınır:** `domain/` ve `application/` Fastify/ws/sqlite/env
-   import ETMEZ; portlar (`IHubChannel`, `IStreamSink`, `IAuditSink`, …) enjekte edilir.
+1. **Wire v2-only:** `register` = `peerId` + required `peerType` + `protocolVersion:2`;
+   non-v2 shapes (`containerId` etc.) are rejected. Version changes require MAJOR + a migration note.
+2. **Codec:** 9-byte header, `decode` **never throws** (`Result`); limits
+   64 KiB chunk / 1 MiB frame. `seq` is a separate counter per side (diagnostics only).
+3. **Single outbound WS:** control messages (text) + tunnel streams (binary)
+   share the same channel; no separate connection.
+4. **Flow caps:** 1 interactive session per peer, 16 concurrent streams,
+   256 KiB credit window; session TTL 4 h / idle 15 min, stream idle 5 min;
+   stale threshold 45 s, sweep 1 s. Without credit the body STOPS (no deadlock).
+5. **Session:** `ITokenSigner` is injected; the agent signer stamps and verifies
+   `type:"container-session"` in the JWT (the lib payload does not define the tag —
+   consumer signers must stamp it too). Users are never written to the peer DB;
+   cookie name + Path-scoped/HttpOnly is the consumer's job. **Audit fail-closed:**
+   if `IAuditSink.open` cannot be written, no session is opened.
+6. **Opacity:** a service announcement carries only `id` + cosmetic `meta`; target
+   address/protocol/health/endpoint fields are rejected by the STRICT schema.
+7. **lib carries no domain:** business/telemetry concepts and application imports are
+   FORBIDDEN; the only external dependencies are `ws` + `zod` (`jose` is an optional
+   peer for `./test-helpers` only).
+8. **Hub hexagonal boundary:** `domain/` and `application/` do NOT import
+   Fastify/ws/sqlite/env; ports are injected (`IPeerRegistry`, `IPeerConnectionTracker`,
+   `ISessionGateway`, `IConsumerRelay`, `IPeerCredentialsStore`, …). `bun run check` enforces this.
 
-## Geliştirme kuralları
+## Development rules
 
-- **Testsiz davranış değişikliği yok.** `*.test.ts` co-located; hub/agent/lib
-  kendi testlerini `bun run test` ile koşar.
-- **Güvenlik-kritik modüller** (frame codec, connector, client, session-gateway,
-  tunnel-proxy): branch ≥%90, mutasyon eşiği ≥%90.
-- Named exports; ESM; `import type`; kebab-case dosya adları.
-- Build artefaktı (`dist/`, `*.tsbuildinfo`, `test-results/`) commit edilmez;
-  **binary imaj/dosya repo'ya KONMAZ** (Docker Hub + GitHub Releases).
-- Docker imajları repo kök bağlamından derlenir (`-f hub/Dockerfile .`).
+- **No behavior change without tests.** `*.test.ts` co-located; hub/agent/lib
+  run their own tests via `bun run test`.
+- **Security-critical modules** (frame codec, connector, client, session-gateway,
+  tunnel-proxy): branch ≥90%, mutation threshold ≥90%.
+- Named exports; ESM; `import type`; kebab-case file names.
+- Build artifacts (`dist/`, `*.tsbuildinfo`, `test-results/`) are not committed;
+  **binary images/files NEVER go into the repo** (Docker Hub + GitHub Releases).
+- Docker images are built from the repo root context (`-f hub/Dockerfile .`).
 
-## Yayın
+## Deterministic checks
+
+Architecture contracts are locked by deterministic scripts, not review
+(`bun run check`; runs in CI):
+
+- `tools/check-contracts.ts` — DIP: `hub/src/{domain,application}` constructor
+  parameters must be I- contracts only (concrete class injection is rejected;
+  method-less data shapes are exempt).
+- `tools/hub-arch-checks.mjs` — hexagonal boundary: domain/application
+  do not import Fastify/ws/sqlite and do not access env; `../infrastructure`/`../config` are forbidden.
+
+## Release
 
 - **lib:** npm (`bun publish` in `lib/`, `prepublishOnly` = build + test);
-  semver; kırıcı değişiklik = MAJOR + SPEC revizyonu.
+  semver; breaking change = MAJOR + SPEC revision.
 - **hub/agent:** Docker Hub (`ilterisyucel/zero-trust-application-channel-{hub,agent}`,
-  tag = sürüm + `latest`); agent ayrıca GitHub Releases binary (`agent-arm64/x64`).
-- Tag `v<semver>` → `release.yml` (npm + Docker Hub; secret'lar: `NPM_TOKEN`,
-  `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`).
+  tag = version + `latest`); agent also ships GitHub Releases binaries (`agent-arm64/x64`).
+- Tag `v<semver>` → `release.yml` (npm + Docker Hub + GitHub Releases binaries;
+  secrets: `NPM_TOKEN`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`).
 
-## İlgili
+## Related
 
-- Tüketici (EMS monorepo) yalnız `lib`'i npm'den ve hub/agent imajlarını çeker;
-  adaptörler (`IHubChannel`/`IStreamSink`/`ITokenSigner` implementasyonları)
-  tüketicide yaşar.
+- The consumer (EMS monorepo) pulls only `lib` from npm and the hub/agent images;
+  adapters (`IHubChannel`/`IStreamSink`/`ITokenSigner` implementations) live in the consumer.

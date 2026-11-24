@@ -17,4 +17,5 @@ jobs:
       # lib tipleri/dist'i olmadan hub/agent typecheck'i geçmez (workspace paketi).
       - run: bun run --cwd lib build
       - run: bun run typecheck
+      - run: bun run check
       - run: bun run test

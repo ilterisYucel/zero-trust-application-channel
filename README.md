@@ -12,6 +12,22 @@ log codes.
 | [`hub/`](hub/) | Hub service: peer registry/discovery, opaque service access, consumer relay, bootstrap identity (hexagonal) | **Docker** |
 | [`agent/`](agent/) | Peer agent: single-binary CLI (`run/setup/wizard/uninstall`), bootstrap claim, systemd install | **Binary** (GitHub Releases) + Docker |
 
+## Why this exists
+
+- **Problem:** data from software running inside battery-storage containers
+  needed to be collected, but for security reasons those machines could not be
+  exposed to the internet — no inbound ports, no public endpoints.
+- **Gap:** existing options were either vendor-bound services (Cloudflare
+  Tunnel, ngrok) or standalone self-hosted daemons (frp, rathole, chisel)
+  with their own config and lifecycle — none was a platform-independent,
+  dependency-light library that plugs into an existing web application with
+  session and audit semantics.
+- **Trajectory:** the tunnel was first used between an energy-management
+  platform's web services, then to surface industrial edge devices (e.g.
+  Revolution Pi dashboards) inside a web UI — which is why the package stays
+  generic: transport-only core, and each consumer injects its own domain
+  behaviour (cookie name, allowlist, upstream routes, log codes).
+
 ## Quick start
 
 ### Library (npm)

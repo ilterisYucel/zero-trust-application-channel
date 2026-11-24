@@ -13,7 +13,7 @@ sözleşmeleri taşır. Kaynak SPEC'ler: [LIB](LIB-MIMARISI.md), [HUB](HUB-MIMAR
   Hata/401/register-timeout → backoff (`exp(2^n·1s)+jitter`, tavan 60 sn);
   `stop()` → offline. `generation` koruması: bayat soket olayları yok sayılır.
 - **Register (v2-only):** `{ type:"register", peerId, peerType, protocolVersion:2 }`;
-  v1 `containerId` fallback YOKTUR.
+  v2 dışı şema (`containerId` vb.) kabul edilmez — hub farklı `protocolVersion`'ı reddeder.
 - **Operational config:** `register-ack.config` / `config-update` → zod (STRICT değil,
   bilinmeyen anahtar strip) → geçerliyse restart'sız uygulanır; geçersiz →
   `configRejected`, eski config korunur.
@@ -28,12 +28,14 @@ sözleşmeleri taşır. Kaynak SPEC'ler: [LIB](LIB-MIMARISI.md), [HUB](HUB-MIMAR
   binary gövde (≤64 KiB parça) → `FIN`; hata → `RST`. Kredi (`stream-window`)
   yoksa gövde DURUR (deadlock yok — idle sweep kapatır).
 - **Limitler:** peer başına 1 etkileşimli oturum, 16 eşzamanlı stream,
-  pencere 256 KiB, TTL 4 sa, idle 15 dk, 60 sn ölü socket sweep.
+  pencere 256 KiB, oturum TTL 4 sa / idle 15 dk, stream idle 5 dk;
+  stale eşiği 45 sn, sweep 1 sn.
 
 ## Oturum sözleşmesi
 
-- `open-session` → peer KENDİ secret'iyle JWT üretir (`ITokenSigner`;
-  `type:"container-session"` etiketi — access token'la karışmaz) →
+- `open-session` → peer KENDİ secret'iyle JWT üretir (`ITokenSigner`).
+  Agent signer'ı `type:"container-session"` etiketini basar ve doğrular; lib
+  payload'ı etiketi tanımlamaz — tüketici signer'ı da basmalıdır. →
   `open-session-ack`. Cookie adı tüketici enjekte eder (varsayılan nötr
   `tunnel_session`); **Path-scoped**, HttpOnly uygulamak tüketicinin işidir.
 - Kullanıcı peer DB'sine ASLA yazılmaz. Rol eşlemesi hub'da birebirdir
@@ -44,8 +46,8 @@ sözleşmeleri taşır. Kaynak SPEC'ler: [LIB](LIB-MIMARISI.md), [HUB](HUB-MIMAR
 ## Paket sınırı
 
 - `lib` yalnız `ws` + `zod` kullanır (test yardımcısı `jose` opsiyonel peer).
-  Herhangi bir uygulama/monorepo importu YASAK — domain kavramı (telemetri,
-  BESS/konteyner/field, HTTP route) pakete giremez.
+  Herhangi bir uygulama importu YASAK — iş/telemetri kavramı ve HTTP route
+  pakete giremez.
 - Keşif + erişim tüketicide yaşar; duyuru opaktır (`id` + kozmetik `meta`),
   hedef adres/protocol/health/endpoint alanları STRICT şemada REDDEDİLİR.
 - Enjeksiyonlar: cookie adı, allowlist/blocklist, connector log kodları

@@ -1,4 +1,5 @@
 import type { WebSocket } from "ws";
+import { TUNNEL_PROTOCOL_VERSION } from "zero-trust-application-channel";
 import type {
   HubPeerRegistry,
   IHubChannel,
@@ -27,6 +28,7 @@ interface RegisterFrame {
   type?: unknown;
   peerId?: unknown;
   peerType?: unknown;
+  protocolVersion?: unknown;
   services?: unknown;
 }
 
@@ -168,6 +170,11 @@ export class PeerChannelHub implements IHubChannel, IPeerDisconnector {
       typeof msg.peerType !== "string"
     ) {
       this.reject(socket, "bad-register");
+      return undefined;
+    }
+    // Wire v2-only (K1): farklı/eksik sürüm sessizce kabul EDİLMEZ.
+    if (msg.protocolVersion !== TUNNEL_PROTOCOL_VERSION) {
+      this.reject(socket, "unsupported-protocol-version");
       return undefined;
     }
 

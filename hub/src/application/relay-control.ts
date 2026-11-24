@@ -1,6 +1,7 @@
 import { Result, NotFoundError, TransientError } from "zero-trust-application-channel";
-import type { DomainError, HubPeerRegistry, IHubChannel } from "zero-trust-application-channel";
+import type { DomainError, IHubChannel } from "zero-trust-application-channel";
 import type { IConsumerRelay } from "../domain/ports/consumer-relay";
+import type { IPeerRegistry } from "../domain/ports/peer-registry";
 
 /**
  * RelayControl — consumer ↔ peer opak kontrol kanalı.
@@ -11,7 +12,7 @@ import type { IConsumerRelay } from "../domain/ports/consumer-relay";
 export class RelayControl {
   constructor(
     private readonly channel: IHubChannel,
-    private readonly registry: HubPeerRegistry,
+    private readonly registry: IPeerRegistry,
     private readonly relay: IConsumerRelay,
   ) {}
 

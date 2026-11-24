@@ -1,18 +1,18 @@
 import { Result, NotFoundError } from "zero-trust-application-channel";
 import type {
   DomainError,
-  HubPeerRegistry,
   ServiceAnnouncement,
 } from "zero-trust-application-channel";
-import type { PeerConnectionTracker } from "../domain/peer-connection-tracker";
+import type { IPeerConnectionTracker } from "../domain/ports/peer-connection-tracker";
+import type { IPeerRegistry } from "../domain/ports/peer-registry";
 import { toPeerSummaries } from "../domain/discovery-view";
 import type { PeerSummary } from "../domain/discovery-view";
 
 /** DiscoverPeers — keşif use-case'i (saf sorgular). */
 export class DiscoverPeers {
   constructor(
-    private readonly registry: HubPeerRegistry,
-    private readonly tracker: PeerConnectionTracker,
+    private readonly registry: IPeerRegistry,
+    private readonly tracker: IPeerConnectionTracker,
   ) {}
 
   peers(): readonly PeerSummary[] {

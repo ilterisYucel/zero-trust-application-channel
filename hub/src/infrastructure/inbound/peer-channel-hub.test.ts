@@ -75,6 +75,7 @@ describe("PeerChannelHub", () => {
           type: "register",
           peerId: "p-1",
           peerType: "device",
+          protocolVersion: 2,
           services: [{ id: "local-admin" }],
         }),
       ),
@@ -95,13 +96,36 @@ describe("PeerChannelHub", () => {
     socket.emit(
       "message",
       Buffer.from(
-        JSON.stringify({ type: "register", peerId: "p-1", peerType: "device" }),
+        JSON.stringify({
+          type: "register",
+          peerId: "p-1",
+          peerType: "device",
+          protocolVersion: 2,
+        }),
       ),
       false,
     );
     await tick();
     expect(JSON.parse(socket.sent[0] ?? "{}").status).toBe("rejected");
     expect(socket.closed?.code).toBe(1008);
+    expect(registry.peers()).toEqual([]);
+    hub.stop();
+  });
+
+  it("K1: yanlış/eksik protocolVersion → rejected + kapanış", async () => {
+    const { hub, registry } = setup();
+    const payloads = [
+      { type: "register", peerId: "p-1", peerType: "device", protocolVersion: 1 },
+      { type: "register", peerId: "p-1", peerType: "device" },
+    ];
+    for (const payload of payloads) {
+      const socket = new FakeSocket();
+      hub.accept(socket.asSocket(), "t");
+      socket.emit("message", Buffer.from(JSON.stringify(payload)), false);
+      await tick();
+      expect(JSON.parse(socket.sent[0] ?? "{}").status).toBe("rejected");
+      expect(socket.closed?.code).toBe(1008);
+    }
     expect(registry.peers()).toEqual([]);
     hub.stop();
   });
@@ -113,7 +137,12 @@ describe("PeerChannelHub", () => {
     socket.emit(
       "message",
       Buffer.from(
-        JSON.stringify({ type: "register", peerId: "p-1", peerType: "device" }),
+        JSON.stringify({
+          type: "register",
+          peerId: "p-1",
+          peerType: "device",
+          protocolVersion: 2,
+        }),
       ),
       false,
     );
@@ -131,7 +160,12 @@ describe("PeerChannelHub", () => {
     socket.emit(
       "message",
       Buffer.from(
-        JSON.stringify({ type: "register", peerId: "p-1", peerType: "device" }),
+        JSON.stringify({
+          type: "register",
+          peerId: "p-1",
+          peerType: "device",
+          protocolVersion: 2,
+        }),
       ),
       false,
     );

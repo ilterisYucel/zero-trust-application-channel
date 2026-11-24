@@ -10,6 +10,14 @@ library** — independent of any application or monorepo. Domain adapters
 neutral (`peerId` + `peerType`), and session/cookie/allowlist behaviour is
 injected via config (see [`../docs/CONTRACTS.md`](../docs/CONTRACTS.md)).
 
+**Origin:** built because software on internet-isolated field devices
+(battery-storage containers, industrial edge hardware) had to be reachable
+remotely without inbound ports, and existing tunnels were vendor-bound
+services or standalone daemons rather than embeddable libraries. First used
+between web services of an energy-management platform, later to surface edge
+dashboards in a web UI — which is why the core is transport-only and
+domain-free.
+
 ## Contents
 
 | Module | Responsibility |
